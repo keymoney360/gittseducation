@@ -12,7 +12,7 @@ const { sendResetEmail } = require("../services/mailer");
 router.post("/register", authLimiter, async (req, res, next) => {
   try {
     const { name, email, phone, password, referralCode, county, town } = req.body;
-    if (!name || !email || !phone || !password || password.length < 10) return res.status(400).json({ error: "Complete all required fields. Password must be at least 10 characters." });
+    if (!name || !email || !phone || !password || password.length  6) return res.status(400).json({ error: "Complete all required fields. Password must be at least 6 characters." });
 
     // FIXED: Accept 07..., 01..., 254..., +254... and normalize to 254... for M-Pesa
     let cleanPhone = String(phone || "").replace(/[\s-]/g, "");
@@ -76,7 +76,7 @@ router.post("/forgot-password", authLimiter, async (req, res, next) => {
 });
 router.post("/reset-password", authLimiter, async (req, res) => {
   const { email, token, password } = req.body;
-  if (!password || password.length < 10) return res.status(400).json({ error: "Password must be at least 10 characters." });
+  if (!password || password.length < 6) return res.status(400).json({ error: "Password must be at least 6 characters." });
   const hash = crypto.createHash("sha256").update(String(token || "")).digest("hex");
   const user = await User.findOne({ email: String(email || "").toLowerCase(), resetTokenHash: hash, resetTokenExpires: { $gt: new Date() } });
   if (!user) return res.status(400).json({ error: "Reset link is invalid or expired." });
