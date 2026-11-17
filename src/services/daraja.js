@@ -19,6 +19,21 @@ async function accessToken() {
   }
 
   const auth = Buffer.from(`${key}:${secret}`, "utf8").toString("base64");
+  const crypto = require("crypto");
+
+const fingerprint = crypto
+  .createHash("sha256")
+  .update(`${key}:${secret}`)
+  .digest("hex")
+  .slice(0, 12);
+
+console.log("[Daraja credential check]", {
+  keyPresent: !!key,
+  secretPresent: !!secret,
+  keyLength: key.length,
+  secretLength: secret.length,
+  fingerprint
+});
   const url = `${baseUrl()}/oauth/v1/generate?grant_type=client_credentials`;
 
   try {
