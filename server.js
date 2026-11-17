@@ -1,5 +1,4 @@
 require("dotenv").config();
-const cors = require("cors");
 const express = require("express");
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
@@ -21,10 +20,6 @@ app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(generalLimiter);
-app.use(cors({
-  origin: "https://gittseducation.vercel.app",
-  credentials: true
-}));
 
 const mongoUri = process.env.MONGODB_URI;
 if (!mongoUri) {
@@ -44,8 +39,8 @@ app.use(session({
   store: MongoStore.create({ mongoUrl: mongoUri, collectionName: "sessions" }),
   cookie: {
     httpOnly: true,
-    sameSite: "none",
-    secure: true,
+    sameSite: "lax",
+    secure: process.env.SESSION_COOKIE_SECURE === "true",
     maxAge: 1000 * 60 * 60 * 24 * 7
   }
 }));

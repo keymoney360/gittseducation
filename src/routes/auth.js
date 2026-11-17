@@ -12,28 +12,22 @@ const { sendResetEmail } = require("../services/mailer");
 router.post("/register", authLimiter, async (req, res, next) => {
   try {
     const { name, email, phone, password, referralCode, county, town } = req.body;
-    if (!name || !email || !phone || !password || password.length < 6) return res.status(400).json({ error: "Complete all required fields. Password must be at least 6 characters." });
-
-    // FIXED: Accept 07..., 01..., 254..., +254... and normalize to 254... for M-Pesa
-    let cleanPhone = String(phone || "").replace(/[\s-]/g, "");
-    if (cleanPhone.startsWith("+")) cleanPhone = cleanPhone.slice(1);
-    if (/^0[17]\d{8}$/.test(cleanPhone)) cleanPhone = "254" + cleanPhone.slice(1);
-    if (!/^254[17]\d{8}$/.test(cleanPhone)) return res.status(400).json({ error: "Enter a valid Kenyan phone number." });
-
-    if (await User.findOne({ $or: [{ email: email.toLowerCase() }, { phone: cleanPhone }] })) return res.status(409).json({ error: "Email or phone number already registered." });
+    if (!name || !email || !phone || !password || password.length < 10) return res.status(400).json({ error: "Complete all required fields. Password must be at least 10 characters." });
+    if (!/^(?:2547|2541|07|01)\d{8}$/.test(String(phone).replace(/\s/g, ""))) return res.status(400).json({ error: "Enter a valid Kenyan phone number." });
+    if (await User.findOne({ $or: [{ email: email.toLowerCase() }, { phone }] })) return res.status(409).json({ error: "Email or phone number already registered." });
     let referrer = null;
     if (referralCode) {
       referrer = await User.findOne({ referralCode, status: "active" });
       if (!referrer) return res.status(400).json({ error: "Referral code is invalid." });
     }
     const user = await User.create({
-      name, email, phone: cleanPhone, passwordHash: await bcrypt.hash(password, 12),
+      name, email, phone, passwordHash: await bcrypt.hash(password, 12),
       referralCode: nanoid(9).toUpperCase(), referredBy: referrer?._id || null,
       county, town, status: "pending_payment"
     });
-    const payment = await Payment.create({ user: user._id, kind: "registration", amount: registrationFee, phone: cleanPhone, status: "initiated" });
+    const payment = await Payment.create({ user: user._id, kind: "registration", amount: registrationFee, phone, status: "initiated" });
     try {
-      const result = await stkPush({ phone: cleanPhone, amount: registrationFee, accountReference: `REG${user._id.toString().slice(-8)}`, transactionDesc: "GITTS Registration" });
+      const result = await stkPush({ phone, amount: registrationFee, accountReference: `REG${user._id.toString().slice(-8)}`, transactionDesc: "GITTS Registration" });
       payment.merchantRequestId = result.MerchantRequestID;
       payment.checkoutRequestId = result.CheckoutRequestID;
       payment.status = "pending";
@@ -76,7 +70,7 @@ router.post("/forgot-password", authLimiter, async (req, res, next) => {
 });
 router.post("/reset-password", authLimiter, async (req, res) => {
   const { email, token, password } = req.body;
-  if (!password || password.length < 6) return res.status(400).json({ error: "Password must be at least 6 characters." });
+  if (!password || password.length < 10) return res.status(400).json({ error: "Password must be at least 10 characters." });
   const hash = crypto.createHash("sha256").update(String(token || "")).digest("hex");
   const user = await User.findOne({ email: String(email || "").toLowerCase(), resetTokenHash: hash, resetTokenExpires: { $gt: new Date() } });
   if (!user) return res.status(400).json({ error: "Reset link is invalid or expired." });

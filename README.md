@@ -81,3 +81,12 @@ Log in at `/login.html`. Admin users are redirected to `/admin.html`. Admin API 
 
 ## Environment variables
 See `.env.example`. Never commit `.env` to GitHub.
+
+
+## Production Daraja troubleshooting update
+- `MPESA_ENV` is normalized case-insensitively; use `production` on the live Daraja application.
+- Set `MPESA_CALLBACK_URL` to `https://YOUR-RENDER-DOMAIN.onrender.com/api/payments/mpesa/callback`.
+- The server accepts `CALLBACK_URL` as a temporary alias, but `MPESA_CALLBACK_URL` is preferred.
+- OAuth failure logs now include the HTTP status and Safaricom response body when supplied, without logging credentials.
+- Use the Consumer Key and Consumer Secret generated for the same Daraja production app. Do not use sandbox credentials with the production host.
+- The Buy Goods shortcode, till number, passkey and transaction type must match the exact STK Push configuration Safaricom approved for the merchant.
